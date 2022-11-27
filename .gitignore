@@ -1,6 +1,5 @@
 node_modules
 dist/
 deploy/
-steamcmd/
 *.log
 .vscode
