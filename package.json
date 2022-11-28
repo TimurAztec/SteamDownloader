@@ -1,9 +1,9 @@
 {
-  "name": "nodegui-starter",
-  "version": "1.0.0",
+  "name": "steam-downloader",
+  "version": "0.0.1",
   "main": "index.js",
-  "author": "Atul R <atulanand94@gmail.com>",
-  "license": "MIT",
+  "author": "Timur P <timotiaztec@gmail.com>",
+  "license": "GNU LESSER GENERAL PUBLIC LICENSE",
   "private": true,
   "scripts": {
     "build": "webpack --mode production",

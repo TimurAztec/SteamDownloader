@@ -6,6 +6,7 @@ const exec = require('child_process').exec;
 const win = new QMainWindow();
 win.setWindowTitle("SteamDownloader");
 win.setWindowIcon(new QIcon(logo));
+win.setMinimumSize(360, 120);
 
 const centralWidget = new QWidget();
 centralWidget.setObjectName("myroot");
@@ -27,6 +28,7 @@ downloadButton.setText("Download");
 
 downloadButton.addEventListener("clicked", async () => {
   downloadProgressBar.setValue(0);
+  let downloadInterval: any;
   downloadButton.setDisabled(true);
   linkInput.setDisabled(true);
   infoLabel.setText("");
@@ -44,6 +46,9 @@ downloadButton.addEventListener("clicked", async () => {
     if (!itemId) {
       throw new Error(`Invalid URL`);
     }
+    downloadProgressBar.setValue(10);
+    console.log(`Steam Workshop item ID: ${itemId}`);
+    infoLabel.setText(`Steam Workshop item ID: ${itemId}`);
     const responce = await axios.get(linkInput.text());
     const appIdStringSearchRes = /[?]appid=[0-9]{3,12}/g.exec(responce.data);
     if (appIdStringSearchRes) {
@@ -55,14 +60,30 @@ downloadButton.addEventListener("clicked", async () => {
     if (!appId) {
       throw new Error(`Cant find app ID`);
     }
-    downloadProgressBar.setValue(15);
-    exec(`./steamcmd/steamcmd.${process.platform == 'win32' ? 'exe' : 'sh'}  +login anonymous +workshop_download_item ${appId} ${itemId} +quit`, function(error: string, stdout: string, stderr: string){
-      const downloadInfoSearchRes = new RegExp(`Downloaded item ${itemId} to \"(.*)\"`).exec(stdout);      
+    console.log(`Steam app ID: ${appId}`);
+    infoLabel.setText(`Steam app ID: ${appId}`);
+    downloadProgressBar.setValue(20);
+    const steamCmdCommand: string = `${__dirname}/steamcmd/steamcmd.${process.platform == 'win32' ? 'exe' : 'sh'}  +login anonymous +workshop_download_item ${appId} ${itemId} +quit`;
+    console.log(steamCmdCommand);
+    downloadInterval = setInterval(() => { 
+      if (downloadProgressBar.value() < 99) {
+        downloadProgressBar.setValue(downloadProgressBar.value() + 1);
+      }
+    }, 250);
+    exec(steamCmdCommand, function(error: string, stdout: string, stderr: string){
+      console.log(stdout);
+      infoLabel.setText(stdout);
+      const downloadInfoSearchRes = new RegExp(`Downloaded item ${itemId} to \"(.*)\"`).exec(stdout);   
       if (downloadInfoSearchRes) {
-        infoLabel.setText(downloadInfoSearchRes[0]);
+        const indexOfSplit: number = downloadInfoSearchRes[0].indexOf(`\"`) - 1;
+        const downloadFinishedText = [downloadInfoSearchRes[0].slice(0, indexOfSplit), '\n', downloadInfoSearchRes[0].slice(indexOfSplit)].join('');
+        infoLabel.setText(downloadFinishedText);
         downloadProgressBar.setValue(100);
         linkInput.setText("");
       }
+      downloadButton.setDisabled(false);
+      linkInput.setDisabled(false);
+      clearInterval(downloadInterval);
     });
   } catch (error: any) {
     console.log(error.message);
@@ -70,9 +91,11 @@ downloadButton.addEventListener("clicked", async () => {
       color: 'red';
     `)
     infoLabel.setText(error.message);
-  } finally {
     downloadButton.setDisabled(false);
     linkInput.setDisabled(false);
+    if (downloadInterval) {
+      clearInterval(downloadInterval);
+    }
   }
 });
 
@@ -86,15 +109,6 @@ rootLayout.addWidget(downloadButton);
 rootLayout.addWidget(downloadProgressBar);
 rootLayout.addWidget(infoLabel);
 win.setCentralWidget(centralWidget);
-win.setStyleSheet(
-  `
-    #mylabel {
-      font-size: 16px;
-      font-weight: bold;
-      padding: 1;
-    }
-  `
-);
 
 win.show();
 (global as any).win = win;
