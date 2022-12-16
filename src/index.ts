@@ -73,6 +73,9 @@ downloadButton.addEventListener("clicked", async () => {
   downloadFolderInput.setDisabled(true);
   selectDownloadFolderButton.setDisabled(true);
   infoLabel.setText("");
+  infoLabel.setInlineStyle(`
+    color: 'black';
+  `);
   try {
     const url = linkInput.text();
     let appId: number = 0;
@@ -127,7 +130,7 @@ downloadButton.addEventListener("clicked", async () => {
     }, 250);
 
     const { stdout } = await execFile(
-      `${__dirname}/steamcmd/steamcmd.${process.platform == 'win32' ? 'exe' : 'sh'}`,
+      `${__dirname}\\steamcmd\\steamcmd.${process.platform == 'win32' ? 'exe' : 'sh'}`,
       [`+login anonymous`, `+workshop_download_item ${appId} ${itemId}`, `+quit`]
       );
     console.log(stdout);
