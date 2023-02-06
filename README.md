@@ -1,7 +1,6 @@
 # SteamDownloader
-Simple application for downloading steam workshop items. This application is usefull for people who wants to play non-steam games either it`s GOG version or else :> </br>
+Simple application for downloading steam workshop items. This application is usefull for people who wants to play non-steam versions of games
 and have steam workshop addons installed. </br>Simply put link to steam workshop addon and download it to your mods folder or whatever your game/app of choice uses to install addons.
-![gif image](https://i.kym-cdn.com/photos/images/original/001/812/916/d0b.gif)
 ## Tech part 👨‍💻
 This app runs on [NodeJS](https://nodejs.org/) using [NodeGui](https://docs.nodegui.org/)
 <br/>
