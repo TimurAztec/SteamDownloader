@@ -7,11 +7,11 @@
   "private": true,
   "scripts": {
     "build": "webpack --mode production",
-    "start": "webpack && qode ./dist/index.js",
-    "debug": "webpack && qode --inspect ./dist/index.js"
+    "start": "npx --yes del-cli .\\dist && webpack && npx --yes cpy-cli ./steamcmd .\\dist && qode ./dist/index.js",
+    "debug": "npx --yes del-cli .\\dist && webpack && npx --yes cpy-cli ./steamcmd .\\dist && qode --inspect ./dist/index.js"
   },
   "dependencies": {
-    "@nodegui/nodegui": "0.44.0",
+    "@nodegui/nodegui": "^0.57.1",
     "axios": "^1.2.0",
     "fs-extra": "^11.1.0"
   },

@@ -1,9 +1,9 @@
 import { QMainWindow, QWidget, QLabel, FlexLayout, QPushButton, QIcon, QProgressBar, QLineEdit, QFileDialog, FileMode, QShortcut, QKeySequence } from '@nodegui/nodegui';
 import axios from 'axios';
-const node_utils = require('node:util');
-const execFile = node_utils.promisify(require('node:child_process').execFile);
-const fs = require('fs-extra')
+const fs = require('fs-extra');
 import logo from '../assets/steamdownloader_icon.png';
+import { execSteamCMD } from './steamUtils';
+import checkInstalation from './checkInstalation';
 
 const win = new QMainWindow();
 win.setWindowTitle("SteamDownloader");
@@ -34,6 +34,7 @@ selectDownloadFolderWidget.setInlineStyle(`
   flex-direction: row;
 `)
 
+let downloadInterval: any;
 const downloadFolderInput: QLineEdit = new QLineEdit();
 downloadFolderInput.setPlaceholderText(`Download to...`);
 downloadFolderInput.setInlineStyle(`
@@ -67,7 +68,6 @@ downloadButton.setDefault(true);
 
 downloadButton.addEventListener("clicked", async () => {
   downloadProgressBar.setValue(0);
-  let downloadInterval: any;
   downloadButton.setDisabled(true);
   linkInput.setDisabled(true);
   downloadFolderInput.setDisabled(true);
@@ -123,17 +123,10 @@ downloadButton.addEventListener("clicked", async () => {
     infoLabel.setText(`Steam Workshop item name: ${itemName}`);
     downloadProgressBar.setValue(30);
 
-    downloadInterval = setInterval(() => { 
-      if (downloadProgressBar.value() < 99) {
-        downloadProgressBar.setValue(downloadProgressBar.value() + 1);
-      }
-    }, 250);
+    startFakeLoading();
 
-    const { stdout } = await execFile(
-      `${__dirname}\\steamcmd\\steamcmd.${process.platform == 'win32' ? 'exe' : 'sh'}`,
-      [`+login anonymous`, `+workshop_download_item ${appId} ${itemId}`, `+quit`]
-      );
-    console.log(stdout);
+    const stdout = await execSteamCMD(`+login anonymous`, `+workshop_download_item ${appId} ${itemId}`, `+quit`);
+    console.debug(stdout);
 
     const downloadInfoSearchRes = new RegExp(`Downloaded item ${itemId} to \"(.*)\"`).exec(stdout);   
     if (downloadInfoSearchRes) {
@@ -157,7 +150,6 @@ downloadButton.addEventListener("clicked", async () => {
     }
     clearInterval(downloadInterval);
   } catch (error: any) {
-    console.log(error.message);
     infoLabel.setInlineStyle(`
       color: 'red';
     `)
@@ -173,6 +165,15 @@ downloadButton.addEventListener("clicked", async () => {
   }
 });
 
+function startFakeLoading()
+{
+  downloadInterval = setInterval(() => { 
+    if (downloadProgressBar.value() < 99) {
+      downloadProgressBar.setValue(downloadProgressBar.value() + 1);
+    }
+  }, 250);
+}
+
 const downloadProgressBar = new QProgressBar();
 
 const infoLabel = new QLabel();
@@ -184,6 +185,38 @@ rootLayout.addWidget(downloadButton);
 rootLayout.addWidget(downloadProgressBar);
 rootLayout.addWidget(infoLabel);
 win.setCentralWidget(centralWidget);
-
 win.show();
 (global as any).win = win;
+
+async function start(): Promise<void>
+{
+  try {
+    startFakeLoading();
+    downloadButton.setDisabled(true);
+    linkInput.setDisabled(true);
+    downloadFolderInput.setDisabled(true);
+    selectDownloadFolderButton.setDisabled(true);
+
+    const instalationCheckStatusGenerator: AsyncGenerator<any, any, unknown> = await checkInstalation();
+    infoLabel.setText((await instalationCheckStatusGenerator.next()).value
+    ? `SteamCMD is installed, proceeding...` : `SteamCMD is not fully installed, installing...`);
+    infoLabel.setText((await instalationCheckStatusGenerator.next()).value ? `` : `SteamCMD has been installed`);
+  } catch (error: any) {
+    console.error(error.code);
+    infoLabel.setInlineStyle(`
+        color: 'red';
+      `)
+    infoLabel.setText(error.message);
+  } finally {
+    downloadButton.setDisabled(false);
+    linkInput.setDisabled(false);
+    downloadFolderInput.setDisabled(false);
+    selectDownloadFolderButton.setDisabled(false);
+    if (downloadInterval) {
+      clearInterval(downloadInterval);
+    }
+    downloadProgressBar.setValue(0);
+  }
+}
+
+start();
